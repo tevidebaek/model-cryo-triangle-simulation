@@ -34,4 +34,7 @@ axs = fig.add_subplot(111, projection='3d')
 
 for position in snap.particles.position[:vpp]:
   axs.scatter3D(position[0], position[1], position[2], c='k')
+for position in snap.particles.position[A_index*vpp:(A_index+1)*vpp]:
+  axs.scatter3D(position[0], position[1], position[2], c='r')
+  
 plt.show()
