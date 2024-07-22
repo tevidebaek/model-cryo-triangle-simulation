@@ -176,8 +176,6 @@ orientations = [(1,0,0,0)] * len(positions_A)
 
 rigid = hoomd.md.constrain.Rigid()
 
-print(len(types_A), len(types_B), len(types_C), len(positions_A), len(positions_B), len(positions_C), len(orientations))
-
 #Rigid body definition for A
 name_A = "Triangle_A"
 rigid.body[name_A] = {
@@ -232,12 +230,6 @@ snapshot.particles.orientation = [(1,0,0,0)] * params.subunits                  
 snapshot.particles.types       = full_type_list          #[rigid body name, particle types]
 snapshot.particles.typeid      = [0,1,2]*int(params.subunits/3)                        #index in types of each subunit, make sure to use typeids of the rigid bodies
 snapshot.particles.moment_inertia = inertia_tensor * params.subunits             #inertia tensor of each subunit
-
-print("snapshot types")
-print(snapshot.particles.types)
-
-print("snapshot type ids")
-print(snapshot.particles.typeid)
 
 #take cube root of number of subunits to get how many in each dimension - round up to overcount
 particle_per_dim = int(np.ceil(params.subunits ** (1/3)))
