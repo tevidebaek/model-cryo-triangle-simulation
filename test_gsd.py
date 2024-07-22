@@ -17,5 +17,7 @@ print('available particle types ', snap.particles.types)
 
 #try to look at the index of partciles with type "A1", which is an interaction on side 1
 A_index = np.where(np.array(snap.particles.types) == "A1")
+V_index = np.where(np.array(snap.particles.types) == "V")
 
 print(A_index)
+print(V_index)
