@@ -171,9 +171,11 @@ Iyy = moi[1][1]
 Izz = moi[2][2]
 inertia_tensor = [Ixx, Iyy, Izz]
 
-orientations = [(1,0,0,0)] * len(positions)
+orientations = [(1,0,0,0)] * len(positions_A)
 
 rigid = hoomd.md.constrain.Rigid()
+
+print(len(types_A), len(types_B), len(types_C), len(positions_A), len(positions_B), len(positions_C), len(orientations))
 
 #Rigid body definition for A
 name_A = "Triangle_A"
