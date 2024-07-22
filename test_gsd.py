@@ -25,7 +25,7 @@ print('available particle types ', snap.particles.types)
 A_index = np.where(np.array(snap.particles.types) == "A1")[0][0]
 F_index = np.where(np.array(snap.particles.types) == "F1")[0][0]
 
-print('particle list ', snap.particles.position)
+print('particle list ', len(snap.particles.position))
 
 #plot the first particle positions that may correspond to a single triangle
 
