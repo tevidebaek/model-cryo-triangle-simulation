@@ -5,7 +5,7 @@ import hoomd, gsd.hoomd
 
 #here we will test out my understanding of the GSD file format
 
-traj_file = '../Side1/trajectory.gsd'
+traj_file = './SimulationOutput/Side1/trajectory.gsd'
 
 gsd_file = gsd.hoomd.open(traj_file)
 
