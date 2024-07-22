@@ -1,11 +1,16 @@
 import numpy as np
 import find_angles
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 import hoomd, gsd.hoomd
 
 #here we will test out my understanding of the GSD file format
 
 traj_file = './SimulationOutput/Side1/trajectory.gsd'
+
+vpp = 120 # number of particles per triangle
 
 gsd_file = gsd.hoomd.open(traj_file)
 
@@ -21,3 +26,12 @@ A_index = np.where(np.array(snap.particles.types) == "A1")[0][0]
 F_index = np.where(np.array(snap.particles.types) == "F1")[0][0]
 
 print('particle list ', snap.particles.position)
+
+#plot the first particle positions that may correspond to a single triangle
+
+fig = plt.figure()
+axs = fig.add_subplot(111, projection='3d')
+
+for position in snap.particles.position[:vpp]:
+  axs.scatter3D(position[0], position[1], position[2], c='k')
+plt.show()
