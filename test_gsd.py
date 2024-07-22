@@ -16,8 +16,8 @@ snap = gsd_file[100]   #100 is a random frame
 print('available particle types ', snap.particles.types)
 
 #try to look at the index of partciles with type "A1", which is an interaction on side 1
-A_index = np.where(np.array(snap.particles.types) == "A1")
-V_index = np.where(np.array(snap.particles.types) == "V")
+#this just pulls the index of the type in the list of types, not the index of particles with this type
+A_index = np.where(np.array(snap.particles.types) == "A1")[0][0]
+F_index = np.where(np.array(snap.particles.types) == "F1")[0][0]
 
-print(A_index)
-print(V_index)
+print('particle list ', snap.particles.position)
