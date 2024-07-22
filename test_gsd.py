@@ -10,7 +10,8 @@ import hoomd, gsd.hoomd
 
 traj_file = './SimulationOutput/Side1/trajectory.gsd'
 
-vpp = 120 # number of particles per triangle
+N_p = 36*6  # number of triangles in the simulation
+vpp = 120   # number of particles per triangle
 
 gsd_file = gsd.hoomd.open(traj_file)
 
@@ -32,9 +33,14 @@ print('particle list ', len(snap.particles.position))
 fig = plt.figure()
 axs = fig.add_subplot(111, projection='3d')
 
-for position in snap.particles.position[:vpp]:
+#the first N_p positions are the COMs of all the particles, then the next vpp positions are all the
+#particles that make up the triangle
+
+particle_id = 10
+
+for position in snap.particles.position[:N_p]:
   axs.scatter3D(position[0], position[1], position[2], c='k')
-for position in snap.particles.position[A_index*vpp:(A_index+1)*vpp]:
+for position in snap.particles.position[N_p + particle_id*vpp:N_p+(particle_id+1)*vpp]:
   axs.scatter3D(position[0], position[1], position[2], c='r')
   
 plt.show()
