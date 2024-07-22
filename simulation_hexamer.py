@@ -202,7 +202,7 @@ rigid_eq.body[name_B] = {
 }
 
 #Rigid body definition for C
-name_C = "Triangle"
+name_C = "Triangle_C"
 rigid.body[name_C] = {
      "constituent_types": types_C,
      "positions":         positions_C,
