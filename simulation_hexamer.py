@@ -50,6 +50,11 @@ v_data = np.loadtxt('../MonomerSurfacePositions_lowdensity.csv', skiprows = 1, d
 positions = np.array([[v_data[i][1], v_data[i][2], v_data[i][3]] for i in range(18,len(v_data))])
 interactions = np.array([[v_data[i][1], v_data[i][2], v_data[i][3]] for i in range(18)])
 
+#need to define the vertex types for all the particles
+types_A = ['A_V' for i in range(len(positions))]
+types_B = ['B_V' for i in range(len(positions))]
+types_C = ['C_V' for i in range(len(positions))]
+
 com_a = np.array([0.,0.,0.])
 for i in range(len(positions)):
     com_a[0] += positions[i][0]
@@ -69,10 +74,6 @@ positions = np.append(positions, interactions,axis = 0)
 
 #at this point, create copies of these for each hexamer body
 positions_A, positions_B, positions_C = np.copy(positions), np.copy(positions), np.copy(positions)
-
-types_A = ['A_V' for i in range(len(positions))]
-types_B = ['B_V' for i in range(len(positions))]
-types_C = ['C_V' for i in range(len(positions))]
 
 #types_A, types_B, types_C = np.copy(types), np.copy(types), np.copy(types)
 
