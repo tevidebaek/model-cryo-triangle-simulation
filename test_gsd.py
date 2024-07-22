@@ -13,6 +13,7 @@ print(len(gsd_file))
 
 #create a snapshot of a single frame of the trajectory
 snap = gsd_file[100]   #100 is a random frame
+print('available particle types ', snap.particles.types)
 
 #try to look at the index of partciles with type "A1", which is an interaction on side 1
 A_index = np.where(np.array(snap.particles.types) == "A1")
