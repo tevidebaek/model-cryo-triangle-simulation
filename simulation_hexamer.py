@@ -226,6 +226,12 @@ snapshot.particles.types       = full_type_list          #[rigid body name, part
 snapshot.particles.typeid      = [0,1,2]*int(params.subunits/3)                        #index in types of each subunit, make sure to use typeids of the rigid bodies
 snapshot.particles.moment_inertia = inertia_tensor * params.subunits             #inertia tensor of each subunit
 
+print("snapshot types")
+print(snapshot.particles.types)
+
+print("snapshot type ids")
+print(snapshot.particles.typeid)
+
 #take cube root of number of subunits to get how many in each dimension - round up to overcount
 particle_per_dim = int(np.ceil(params.subunits ** (1/3)))
 
