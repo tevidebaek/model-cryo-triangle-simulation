@@ -230,11 +230,28 @@ def plotDimer(particle_pair, snap, N_p, vpp):
 
   particle_id_1, particle_id_2 = particle_pair
 
+  particle_1_com = snap.particles.position[particle_id_1]
+  particle_2_com = snap.particles.position[particle_id_1]
+
+  avg_com = np.average(np.array([particle_1_com, particle_2_com]), axis=0)
+
+  #get the coord vectors
+
+  x1, y1, z1, com1 = body_coord_sys(snap, particle_id_1, 1, N_p, vpp)
+
+  x2, y2, z2, com2 = body_coord_sys(snap, particle_id_2, 1, N_p, vpp)
+
+  print(x1, y1, z1)
+  print(x2, y2, z2)
+
   for position in snap.particles.position[N_p + particle_id_1*vpp:N_p+(particle_id_1+1)*vpp]:
-    axs.scatter3D(position[0], position[1], position[2], c='r')
+    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='r')
 
   for position in snap.particles.position[N_p + particle_id_2*vpp:N_p+(particle_id_2+1)*vpp]:
-    axs.scatter3D(position[0], position[1], position[2], c='b')
+    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='b')
+
+  axs.set_aspect('equal')
+  
   plt.show()
 
 
@@ -244,7 +261,7 @@ if __name__=="__main__":
   #preamble, setting up parameters of the simulation and setting boolean flags
 
   plot_part_centers = False #this plots the COM of particles
-  plot_test_dimer = False  #this plots a single pair of dimers to make sure our neighbor finding code worked
+  plot_test_dimer = True #this plots a single pair of dimers to make sure our neighbor finding code worked
 
   traj_file = './SimulationOutput/Side1/trajectory.gsd'
 
