@@ -183,7 +183,7 @@ def projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp):
   relative_projections = []
 
   for pair in particle_pairs_to_check:
-    
+
     body_1, body_2 = pair  #recall these are the index of the body
     stretches, th_R, th_T, th_B = getRelativeCoordsProjections(snap, body_1, body_2, side_id, N_p, vpp)
     relative_projections.append([stretches, th_R, th_T, th_B])

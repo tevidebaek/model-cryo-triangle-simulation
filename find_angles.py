@@ -1,251 +1,296 @@
 import numpy as np
+import find_angles
 
-import matplotlib
-# matplotlib.style.use('ggplot')
-import matplotlib.pyplot as plt 
-import mpl_toolkits.mplot3d as a3
+import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from scipy.spatial import ConvexHull
 
 import hoomd, gsd.hoomd
-import itertools
-import math
-import datetime
-import os
 
-import warnings
-import matplotlib.colors as colors
+#############################################################
+#                       MATH FUNCTIONS                      #
+#############################################################
 
-def find_angles_general(file, frame, snapshot=None, topng=False, shift = (0,0,0), side_id=1):
+def deg2rad(ang):
+    ang = ang*np.pi/180
+    return ang
+
+def dot(a,b):
+    return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
+
+def norm(a):
+  return np.sqrt(a[0]**2 + a[1]**2 + a[2]**2)
+
+def cross(a,b):
+    return np.array([a[1]*b[2] - b[1]*a[2], a[2]*b[0] - b[2]*a[0], a[0]*b[1] - b[0]*a[1]])
+
+def angleBetween(u,v,calc_type="COS"):
+    #this calculates the angle between two vectors using either arccos, arcsing or arctan
+
+    if calc_type=="COS": return np.arccos(dot(u,v))
+    elif calc_type=="SIN": return np.arcsin(norm(cross(u,v)))
+    elif calc_type=="TAN": return np.arctan2(norm(cross(u,v)), dot(u,v))
+
+#############################################################
+#                     DIMER ID FUNCTIONS                    #
+#############################################################
+
+def inter_part_distance(p1, p2):
+  #particles are a list of positions (x, y, z)
+  return np.sqrt( (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
+
+def find_neighbors(particle_list, particle_id, cutoff=5):
+  #this will take a particle and see which particles have a COM within some cutoff distance
+  neighbor_list = []
+
+  for o_part_id in range(len(particle_list)):
+    distance = inter_part_distance(particle_list[particle_id], particle_list[o_part_id])
+
+    if distance<0.0000001: continue  #this makes sure we are not checking the same particle
+
+    if distance<cutoff:
+      neighbor_list.append([particle_id, o_part_id])
+
+  return neighbor_list
+
+def get_specific_type_position(snap, part_id, N_p, vpp, type_id):
+  #we need to recall that each particle is located in the range " N_p + part_id*vpp : N_p + part_id*vpp + vpp"
+  #within this range, we need to look at a particular index associated with the type
+  idx_left = N_p + part_id*vpp
+  idx_right = N_p + part_id*vpp + vpp
+
+  type_index = np.where(np.array(snap.particles.types)==type_id)[0][0]
+  
+  #print(snap.particles.typeid[idx_left:idx_right])
+  #print(np.where(np.array(snap.particles.typeid[idx_left:idx_right])==type_index)[0][0])
+  
+  loc_type_id  = np.where(np.array(snap.particles.typeid[idx_left:idx_right])==type_index)[0][0]
+  #print(loc_type_id)
+  
+  loc_particle = N_p + part_id*vpp + loc_type_id
+
+  return snap.particles.position[loc_particle]
+
+def create_dimer_list(snap, side_id, N_p, vpp):  #WILL NEED TO ADD A FLAG ABOUT WHICH INTERACTIONS TO CHECK
+  particle_coms = snap.particles.position[:N_p]
+
+  particle_pairs_to_check = []
+
+  print('creating dimer list')
+  
+  for i in range(len(particle_coms)):
+    neighbor_list = find_neighbors(particle_coms, i)
     
-    N_p = 36*6 #number of triangles in the simulation, specified from the params.py file
+    for nn_id in neighbor_list: particle_pairs_to_check.append(nn_id)
+
+  #now we have our list of particles. At this point we need to see if they are align as a dimer
+  #to do this we will need to find the positions of certain interaction sites
+
+  #print(particle_pairs_to_check)
+  
+  temp_check_list = particle_pairs_to_check
+  particle_pairs_to_check = []
+
+  for particle_pair in temp_check_list:
+    #THIS CAN BE EXTENDED TO CHECK THAT MORE OF THE INTERACTIONS ARE WITHIN A CERTAIN DISTANCE
+    particle_1 = get_specific_type_position(snap, particle_pair[0], N_p, vpp, 'A'+str(side_id))   #position A1 interacts with F1 ####################################################
+    particle_2 = get_specific_type_position(snap, particle_pair[1], N_p, vpp, 'F'+str(side_id))   #position F1 interacts with A1 ####################################################
+
+    #print(particle_pair)
+    #print(particle_1, particle_2)
     
-    #vpp = 39   #this is because in the original model particle there were 39 paritlces per triangel (30 V + 9 int)
-    vpp = 120   #this is for the "low density" triangle model
+    if inter_part_distance(particle_1, particle_2) < int_cutoff:
+      particle_pairs_to_check.append(particle_pair)
 
-    if snapshot is not None:
-        snap = snapshot
-    else:
-        gsd_file = gsd.hoomd.open(file)
-        snap = gsd_file[frame]
+  #print(particle_pairs_to_check)
+
+  return particle_pairs_to_check
+
+#############################################################
+#                   RELATIVE ORI FUNCTIONS                  #
+#############################################################
+
+def body_coord_sys(snap, particle_id, side_id, N_p, vpp):
+  #given the coordinates we currently have we can get our y-axis from the interactions on side 1 and we
+  #can get our x-axis from the COM and the COM of the side1 interactions
+
+  #first get the coordinates of all of the interactions
+  int_sideA_types = ["A1", "B1", "C1", "D1", "E1", "F1"]
+  int_sideB_types = ["A2", "B2", "C2", "D2", "E2", "F2"]
+  int_sideC_types = ["A3", "B3", "C3", "D3", "E3", "F3"]
+
+  if side_id==1:
+     int_side1_types, int_side2_types, int_side3_types = int_sideA_types, int_sideB_types, int_sideC_types
+  if side_id==2:
+     int_side1_types, int_side2_types, int_side3_types = int_sideB_types, int_sideC_types, int_sideA_types
+  if side_id==3:
+     int_side1_types, int_side2_types, int_side3_types = int_sideC_types, int_sideA_types, int_sideB_types
+
+  def get_side_positions(int_side_types):
+    side_positions = []
+
+    for int_type in int_side_types:
+      side_positions.append(get_specific_type_position(snap, particle_id, N_p, vpp, int_type))
+    return np.array(side_positions)  
+
+  side1_positions = get_side_positions(int_side1_types)
+  side2_positions = get_side_positions(int_side2_types)
+  side3_positions = get_side_positions(int_side3_types)
+
+  #now that we have all of the side positions we can get some location data
+  all_positions = np.concatenate([side1_positions, side2_positions, side3_positions], axis=0)
+  com = np.average(all_positions, axis=0)
+
+  com_side1 = np.average(side1_positions, axis=0)
+
+  left_side1, right_side1 = np.average(side1_positions[:3], axis=0), np.average(side1_positions[3:], axis=0)
+
+  #we can now define the axis directions
+  y_hat = (left_side1 - right_side1)/norm(left_side1 - right_side1)
+  x_hat = (com_side1 - com)/norm(com_side1 - com)
+  z_hat = cross(x_hat, y_hat)
+
+  return x_hat, y_hat, z_hat, com_side1
+
+def projectVector(a,n):
+    #a is the vector to project and n is the normal of the plane to project onto
+    #a_P = a - (a.n)n
+    a_p = a - dot(a,n)*n
+    a_p = a_p/norm(a_p)
+    return a_p
+
+def interaction_translations(x,y,z, int_1, int_2):
+    #x,y,z are the normal vectors for boudy 1
+    #int_1 and int_2 are approximations of the interaction sites on the two bodies
+    int_vector = int_1 - int_2
+    dx, dy, dz = dot(int_vector, x), dot(int_vector, y), dot(int_vector, z)
+
+    return np.array([dx, dy, dz])
+
+def getRelativeCoordsProjections(snap, b1, b2, side_id, N_p, vpp):
+    #b1, b2 are coordinates of the two bodies
+
+    #first get the x,y,z are the coordinates of body 1
+    x,y,z, int_1 = body_coord_sys(snap, b1, side_id, N_p, vpp)
+    n1, n2, n3, int_2 = body_coord_sys(snap, b2, side_id, N_p, vpp)
+
+    stretches = interaction_translations(x,y,z, int_1, int_2)
+
+    n2_xy, n2_yz, n2_zx = projectVector(n1, z), projectVector(n2, x), projectVector(n3, y) #this gives: roll, twist, bend
+
+    #need to also be carefull about the sign of the angles: do this by taking the cross product and seeing the sign wrt to the projection axis
+    #to get the angles now see what their angle is with respect to the corresponding normal
+    th_R = angleBetween(x,n2_xy,"TAN")
+    th_T = angleBetween(y,n2_yz,"TAN")
+    th_B = angleBetween(z,n2_zx,"TAN")
+
+    sgn_R = np.sign(dot(cross(x, n2_xy), z))
+    sgn_T = np.sign(dot(cross(y, n2_yz), x))
+    sgn_B = np.sign(dot(cross(z, n2_zx), y))
+
+    th_T = sgn_T*th_T
+    th_R = sgn_R*th_R
+
+    if th_T>0: th_T = th_T-np.pi
+    else: th_T = th_T+np.pi
+
+    if th_R>0: th_R = th_R-np.pi
+    else: th_R = th_R+np.pi
+
+    return stretches, th_R, th_T, th_B*sgn_B
+
+def projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp):
+
+  relative_projections = []
+
+  for pair in particle_pairs_to_check:
+
+    #print(pair)
+      
+    body_1, body_2 = pair  #recall these are the index of the body
+    stretches, th_R, th_T, th_B = getRelativeCoordsProjections(snap, body_1, body_2, side_id, N_p, vpp)
+    dx, dy, dz = stretches
+    relative_projections.append([dx, dy, dz, th_R, th_T, th_B])
+
+  return np.array(relative_projections)
+#############################################################
+#                     PLOTTING FUNCTIONS                    #
+#############################################################
+
+def plotCenters(snap, N_p):
+  fig = plt.figure()
+  axs = fig.add_subplot(111, projection='3d')
+  
+  for position in snap.particles.position[:N_p]:
+    axs.scatter3D(position[0], position[1], position[2], c='k')
+  plt.show()
+
+def plotDimer(particle_pair, snap, N_p, vpp):
+  fig = plt.figure()
+  axs = fig.add_subplot(111, projection='3d')
+
+  particle_id_1, particle_id_2 = particle_pair
+
+  for position in snap.particles.position[N_p + particle_id_1*vpp:N_p+(particle_id_1+1)*vpp]:
+    axs.scatter3D(position[0], position[1], position[2], c='r')
+
+  for position in snap.particles.position[N_p + particle_id_2*vpp:N_p+(particle_id_2+1)*vpp]:
+    axs.scatter3D(position[0], position[1], position[2], c='b')
+  plt.show()
+
+
+if __name__=="__main__":
     
-    #get the box data
-    box = snap.configuration.box
-    L = [box[0], box[1], box[2]]  #this is the size of the simulation box
+  ############################################
+  #preamble, setting up parameters of the simulation and setting boolean flags
 
-    #get total number of particles
-    Ntot = snap.particles.N
+  plot_part_centers = False #this plots the COM of particles
+  plot_test_dimer = False  #this plots a single pair of dimers to make sure our neighbor finding code worked
+
+  traj_file = './SimulationOutput/Side1/trajectory.gsd'
+
+  output_src = './SimulationOutput/Side1/'
+
+  side_id = 1  #this can be 1, 2, or 3
+
+  N_p = 36*6  # number of triangles in the simulation
+  vpp = 120   # number of particles per triangle
+
+  int_cutoff=0.45  #this is the distance threshold for an interaction to check the dimer configuration
+
+  gsd_file = gsd.hoomd.open(traj_file)
+  
+  all_relative_projections = []
+
+  ############################################
+  # NONE OF WHAT FOLLOWS HANDLES WRAPPING OF THE PERIODIC BOUNDARY CONDITIONS
+
+  # WILL NEED TO MAKE THIS A FUNCTION TO GO THROUGH ALL OF THE FRAMES
+  #create a snapshot of a single frame of the trajectory   
+
+  for frame_id in range(len(gsd_file)):
+  #for frame_id in [-1]:
+
+    print('analyzing frame ', frame_id,'/',len(gsd_file))
     
-    #interaction names of partilces
-
-    #get index of 'V' type particles   THIS I WILL NEED TO CHANGE TO ACCOUNT FOR THE NEW INTERACTIONS
-    A_index = np.where(np.array(snap.particles.types) == 'A'+str(int(side_id)))[0][0]
-    B_index = np.where(np.array(snap.particles.types) == 'B'+str(int(side_id)))[0][0]
-    C_index = np.where(np.array(snap.particles.types) == 'C'+str(int(side_id)))[0][0]
-    D_index = np.where(np.array(snap.particles.types) == 'D'+str(int(side_id)))[0][0]
-    E_index = np.where(np.array(snap.particles.types) == 'E'+str(int(side_id)))[0][0]
-    F_index = np.where(np.array(snap.particles.types) == 'F'+str(int(side_id)))[0][0]
-
+    snap = gsd_file[frame_id]
     
-    pair_n = 0
-    pairs = np.array([[]])
-    angles = []
-    done = False
-    all_types = snap.particles.types
-    indexA = 0
-    indexC = 0
+    if plot_part_centers: plotCenters(snap, N_p)
 
-    for i in range(len(all_types)):
-        if all_types[i] == 'A':
-            indexC = i
-        if all_types[i] == 'F':
-            indexA = i
+    #the next thing to do is to see which particles are neighbors
+    particle_pairs_to_check = create_dimer_list(snap, side_id, N_p, vpp)
+    
+    if plot_test_dimer: plotDimer(particle_pairs_to_check[0], snap, N_p, vpp)
 
-    for i in range(N_p):
-        if done:
-            break;
-        f_i = N_p + i*vpp
-        l_i = N_p + i*vpp + vpp
+    #now that we have a list of valid dimer particle pairs we want to calculate the angles of the body
+    #to do this we will use the same code that we use for the cryo-em analysis, for this we will need
+    #the vertex positions of the two particles
+    relative_projections = projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp)
 
-        com1  = np.array([0.0,0.0,0.0])
-        com1 += snap.particles.position[i]
+    for rp in relative_projections: all_relative_projections.append(rp)
+    
+  #we now have gone through all of the frames and have all the coords
+  all_relative_projections = np.array(all_relative_projections)
 
-        for j in range(N_p - i - 1):
-            if done:
-                break;
-            f_ij = N_p + (i+j+1)*vpp
-            l_ij = N_p + (i+j+1)*vpp + vpp
+  #print(all_relative_projections.T[-1])
 
-            com2  = np.array([0.0,0.0,0.0])
-            com2 += snap.particles.position[i + j + 1]
-            dist = com2 - com1
-            distance_sq = dist[0]**2 + dist[1]**2 + dist[2]**2
-
-            if distance_sq < 16:
-                posA1 = np.array([0.0,0.0,0.0])
-                posA2 = np.array([0.0,0.0,0.0])
-                ind1 = 0
-                ind2 = 0
-
-                for k1 in range(vpp):
-                    if snap.particles.typeid[f_ij + k1] == indexC:
-                        ind1 = k1
-
-                for k1 in range(vpp):
-                    if snap.particles.typeid[f_i + k1] == indexA:
-                        ind2 = k1
-
-                posA1 += snap.particles.position[f_i + ind2]
-                posA2 += snap.particles.position[f_ij + ind1]
-                distAs = posA1 - posA2
-                distAf = np.sqrt(distAs[0]**2 + distAs[1]**2 + distAs[2]**2)
-
-                if distAf < 0.45:
-                    pair_n += 1
-                    # This represent a dimer
-                    # print('Dimer')
-                    # print(snap.particles.position[f_i])
-                    # print(snap.particles.position[f_ij])
-                    p1 = snap.particles.position[f_i] - snap.particles.position[f_ij+1]
-                    # print(np.sqrt(p1[0]**2 + p1[1]**2 + p1[2]**2))
-                    # print(snap.particles.position[f_i+1])
-                    # print(snap.particles.position[f_ij+1])
-                    p1 = snap.particles.position[f_i+1] - snap.particles.position[f_ij]
-                    # print(np.sqrt(p1[0]**2 + p1[1]**2 + p1[2]**2))
-                    # print(snap.particles.position[f_i+2])
-                    # print(snap.particles.position[f_ij+2])
-                    p1 = snap.particles.position[f_i+2] - snap.particles.position[f_ij+2]
-                    # print(np.sqrt(p1[0]**2 + p1[1]**2 + p1[2]**2))
-
-                    v = snap.particles.position[f_i] - snap.particles.position[f_i + 5]
-                    w = snap.particles.position[f_i] - snap.particles.position[f_i + 10]
-                    nx = v[1]*w[2] - v[2]*w[1]
-                    ny = v[2]*w[0] - v[0]*w[2]
-                    nz = v[0]*w[1] - v[1]*w[0]
-
-                    v = snap.particles.position[f_ij] - snap.particles.position[f_ij + 5]
-                    w = snap.particles.position[f_ij] - snap.particles.position[f_ij + 10]
-                    mx = v[1]*w[2] - v[2]*w[1]
-                    my = v[2]*w[0] - v[0]*w[2]
-                    mz = v[0]*w[1] - v[1]*w[0]
-
-                    n = np.sqrt(nx**2 + ny**2 + nz**2)
-                    m = np.sqrt(mx**2 + my**2 + mz**2)
-
-                    alpha = 180.0 * np.arccos((nx*mx + ny*my + nz*mz)/(n*m)) / np.pi
-                    # print('Angle: ' + str(alpha))
-                    if alpha < 90:
-                    # if alpha > 180.0:
-                    #     alpha -= 360.0
-                        angles = np.append(angles, alpha)
-
-                    # fig = plt.figure()
-                    # ax = fig.add_subplot(projection='3d')
-                    # 
-                    # pos1 = snap.particles.position[f_i:f_i+6]
-                    # pos2 = snap.particles.position[f_ij:f_ij+6]
-                    # xs = []
-                    # ys = []
-                    # zs = []
-                    # xz = []
-                    # yz = []
-                    # zz = []
-                    # for i in range(6):
-                    #     xs = np.append(xs, pos1[i,0])
-                    #     xz = np.append(xz, pos2[i,0])
-                    #     ys = np.append(ys, pos1[i,1])
-                    #     yz = np.append(yz, pos2[i,1])
-                    #     zs = np.append(zs, pos1[i,2])
-                    #     zz = np.append(zz, pos2[i,2])
-                    # ax.scatter(xs,ys,zs, color='black')
-                    # ax.scatter(xz,yz,zz, color='red')
-                    # print(alpha)
-                    # # ax.set_xlim([])
-                    # plt.show()
-                    #
-                    # done = True
-
-    # print('Pairs: ' + str(pair_n) + ' found')
-    # print('Pairs of A:')
-    # print(pairs)
-    #
-    # print(angles)
-    # print(np.mean(angles))
-    # print(np.std(angles))
-    return angles
-
-    #get the number of particles of type A
-    particle_types = snap.particles.typeid
-    N = len(snap.particles.typeid[particle_types == A_index])
-    #init list to store vertices
-    V = np.zeros((N, 6, 3))
-    #get the vertices of each pentagon via the attractor coordinates
-    count = 0
-    body = 0
-    for particle in range(Ntot):
-        if (particle_types[particle] == A_index):
-            vertex = np.array(snap.particles.position[particle]) + np.array(shift)
-            if vertex[0] > 15: vertex[0] -= 30
-            if vertex[0] < -15: vertex[0] += 30
-            if vertex[1] > 15: vertex[1] -= 30
-            if vertex[1] < -15: vertex[1] += 30
-            if vertex[2] > 15: vertex[2] -= 30
-            if vertex[2] < -15: vertex[2] += 30
-            V[body][count] = np.array(vertex)
-            count += 1
-        if (count == 6):
-            body += 1
-            count = 0
-    M = np.amax(np.amax(V,axis=1),axis=0)
-    m = np.amin(np.amin(V,axis=1),axis=0)
-    #loop over the bodies and construct pentagons using the vertices, fill, plot
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    for body in range(N):
-        vtx1 = V[body][0:3]
-        vtx2 = V[body][3:6]
-        s1 = np.r_[0:2,3:5]
-        s2 = np.r_[1:3,4:6]
-        s3 = np.r_[0,2:4,5]
-        vtx3 = V[body][s1]
-        vtx4 = V[body][s2]
-        vtx5 = V[body][s3]
-        pent = a3.art3d.Poly3DCollection([vtx1])
-        pent.set_color("g")
-        pent.set_edgecolor("k")
-        ax.add_collection(pent)
-    #plot result
-    # ax.set_xlim(m[0], M[0])
-    # ax.set_ylim(m[1], M[1])
-    # ax.set_zlim(m[2], M[2])
-    ax.set_xlim(-15, 15)
-    ax.set_ylim(-15, 15)
-    ax.set_zlim(-15, 15)
-    ax.view_init(35, -80)
-    if topng == False:
-        plt.show()
-    else:
-        plt.savefig('pngs/img_'+str(frame).zfill(7)+'.png')
-        plt.close(fig)
-    return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  np.save(output_src+'side'+str(side_id)+'_fluctuations.npy', all_relative_projections)
