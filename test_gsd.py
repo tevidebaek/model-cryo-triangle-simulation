@@ -38,11 +38,11 @@ def inter_part_distance(p1, p2):
   #particles are a list of positions (x, y, z)
   return np.sqrt( (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
 
-def find_neighbors(particle_list, particle_id, cutoff=16):
+def find_neighbors(particle_list, particle_id, cutoff=5):
   #this will take a particle and see which particles have a COM within some cutoff distance
   neighbor_list = []
 
-  for o_part_id in range(particle_id, particle_list):
+  for o_part_id in range(len(particle_list)):
     distance = inter_part_distance(particle_list[particle_id], particle_list[o_part_id])
 
     if distance<0.0000001: continue  #this makes sure we are not checking the same particle
@@ -220,7 +220,7 @@ if __name__=="__main__":
   ############################################
   #preamble, setting up parameters of the simulation and setting boolean flags
 
-  plot_part_centers = False #this plots the COM of particles
+  plot_part_centers = True #this plots the COM of particles
   plot_test_dimer = True  #this plots a single pair of dimers to make sure our neighbor finding code worked
 
   traj_file = './SimulationOutput/Side1/trajectory.gsd'
