@@ -27,11 +27,11 @@ E_bond = 8.0
 E_rep = E_bond / 6.0
 
 # LJ repulsion
-lj_sigma = 0.8 / triangle_length
+lj_sigma = 0.5 / triangle_length  #was 0.8
 lj_cut = lj_sigma * 2**(1./6.)
 
 # Morse attraction
-m_r0 = 0.7 / triangle_length
+m_r0 = 0.3 / triangle_length   #was 0.7
 m_alpha = 3. * triangle_length
 m_cut = 4./3. / triangle_length
 
