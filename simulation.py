@@ -19,6 +19,10 @@ from create_triangle import *
 
 import params
 
+#Run mode
+#run_mode="GPU"
+run_mode="CPU"
+
 # Equilibrate
 equilibrate = True
 show_triangle = False
@@ -203,8 +207,8 @@ else:
     print('Lattice file lattice_3d.gsd already exists')
 
 #set the simulation device
-#my_device_eq = hoomd.device.GPU() #If you have a GPU available, change CPU() to GPU() for large speedup!
-my_device_eq = hoomd.device.CPU() #If you have a GPU available, change CPU() to GPU() for large speedup!
+if run_mode=="GPU": my_device_eq = hoomd.device.GPU() #If you have a GPU available, change CPU() to GPU() for large speedup!
+if run_mode=="CPU": my_device_eq = hoomd.device.CPU() #If you have a GPU available, change CPU() to GPU() for large speedup!
 
 #create a simulation object to manage all the simulation setup
 simulation_eq = hoomd.Simulation(device=my_device_eq, seed=params.seed)
@@ -267,8 +271,8 @@ if equilibrate:
     simulation_eq.run(eq_steps)
     gsd_writer_eq.flush()
 
-#device = hoomd.device.GPU()
-device = hoomd.device.CPU()
+if run_mode=="GPU": device = hoomd.device.GPU()
+if run_mode=="CPU": device = hoomd.device.CPU()
 
 simulation = hoomd.Simulation(device=device, seed=params.seed)
 simulation.timestep = 0
