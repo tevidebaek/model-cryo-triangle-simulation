@@ -241,6 +241,7 @@ def plotDimer(particle_pair, snap, N_p, vpp):
 
   x2, y2, z2, com2 = body_coord_sys(snap, particle_id_2, 1, N_p, vpp)
 
+
   print(x1, y1, z1)
   print(x2, y2, z2)
 
@@ -249,6 +250,16 @@ def plotDimer(particle_pair, snap, N_p, vpp):
 
   for position in snap.particles.position[N_p + particle_id_2*vpp:N_p+(particle_id_2+1)*vpp]:
     axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='b')
+
+  for normal_vec in [x1, y1, z1]:
+     origin, vec_end = particle_1_com - avg_com, particle_1_com - avg_com + normal_vec
+     plt.plot([origin[0], vec_end[0]], [origin[1], vec_end[1]], [origin[2], vec_end[2]], c='r')
+
+     
+  for normal_vec in [x2, y2, z2]:
+     origin, vec_end = particle_2_com - avg_com, particle_2_com - avg_com + normal_vec
+     plt.plot([origin[0], vec_end[0]], [origin[1], vec_end[1]], [origin[2], vec_end[2]], c='b')
+
 
   axs.set_aspect('equal')
   
@@ -284,8 +295,8 @@ if __name__=="__main__":
   # WILL NEED TO MAKE THIS A FUNCTION TO GO THROUGH ALL OF THE FRAMES
   #create a snapshot of a single frame of the trajectory   
 
-  for frame_id in range(len(gsd_file)):
-  #for frame_id in [-1]:
+  #for frame_id in range(len(gsd_file)):
+  for frame_id in [-1]:
 
     print('analyzing frame ', frame_id,'/',len(gsd_file))
     
