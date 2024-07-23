@@ -271,15 +271,16 @@ if __name__=="__main__":
   #preamble, setting up parameters of the simulation and setting boolean flags
 
   plot_part_centers = False #this plots the COM of particles
-  plot_test_dimer = True #this plots a single pair of dimers to make sure our neighbor finding code worked
-
-  traj_file = './SimulationOutput/Side1/trajectory.gsd'
-
-  output_src = './SimulationOutput/Side1/'
+  plot_test_dimer = False #this plots a single pair of dimers to make sure our neighbor finding code worked
 
   if len(sys.argv)>1:
     side_id = int(sys.argv[1])  #this can be 1, 2, or 3
   else: side_id=1
+
+  traj_file = './SimulationOutput/Side'+str(side_id)+'/trajectory.gsd'
+
+  output_src = './SimulationOutput/Side'+str(side_id)+'/'
+
 
   N_p = 36*6  # number of triangles in the simulation
   vpp = 120   # number of particles per triangle
