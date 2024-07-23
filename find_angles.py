@@ -241,7 +241,6 @@ def plotDimer(particle_pair, snap, N_p, vpp):
 
   x2, y2, z2, com2 = body_coord_sys(snap, particle_id_2, 1, N_p, vpp)
 
-
   print(x1, y1, z1)
   print(x2, y2, z2)
 
