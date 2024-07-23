@@ -231,7 +231,7 @@ def plotDimer(particle_pair, snap, N_p, vpp):
   particle_id_1, particle_id_2 = particle_pair
 
   particle_1_com = snap.particles.position[particle_id_1]
-  particle_2_com = snap.particles.position[particle_id_1]
+  particle_2_com = snap.particles.position[particle_id_2]
 
   avg_com = np.average(np.array([particle_1_com, particle_2_com]), axis=0)
 
