@@ -377,14 +377,29 @@ lj.r_cut[  (full_type_list, full_type_list)]    = 0
 morse.params[(full_type_list, full_type_list)]  = dict(D0=0, r0=0, alpha=0)
 morse.r_cut[  (full_type_list, full_type_list)] = 0
 
-# Repulsive interaction between V and S
-lj.params[("V", "V") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
-lj.r_cut[ ("V", "V") ] = params.lj_cut
-# lj.params[("V", "S") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
-# lj.r_cut[ ("V", "S") ] = params.lj_cut
-# lj.params[("S", "S") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
-# lj.r_cut[ ("S", "S") ] = params.lj_cut
+# Repulsive interaction between A_V and A_V
+lj.params[("A_V", "A_V") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
+lj.r_cut[ ("A_V", "A_V") ] = params.lj_cut
 
+# Repulsive interaction between B_V and B_V
+lj.params[("B_V", "B_V") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
+lj.r_cut[ ("B_V", "B_V") ] = params.lj_cut
+
+# Repulsive interaction between C_V and C_V
+lj.params[("C_V", "C_V") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
+lj.r_cut[ ("C_V", "C_V") ] = params.lj_cut
+
+# Repulsive interaction between A_V and B_V
+lj.params[("A_V", "B_V") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
+lj.r_cut[ ("A_V", "B_V") ] = params.lj_cut
+
+# Repulsive interaction between A_V and C_V
+lj.params[("A_V", "C_V") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
+lj.r_cut[ ("A_V", "C_V") ] = params.lj_cut
+
+# Repulsive interaction between B_V and C_V
+lj.params[("B_V", "C_V") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
+lj.r_cut[ ("B_V", "C_V") ] = params.lj_cut
 integrator.forces.append(lj)
 
 #new interactions with the 6 binding sites per side
