@@ -1,5 +1,5 @@
 import numpy as np
-import find_angles
+import sys
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -277,12 +277,14 @@ if __name__=="__main__":
 
   output_src = './SimulationOutput/Side1/'
 
-  side_id = 1  #this can be 1, 2, or 3
+  if len(sys.argv)>1:
+    side_id = int(sys.argv[1])  #this can be 1, 2, or 3
+  else: side_id=1
 
   N_p = 36*6  # number of triangles in the simulation
   vpp = 120   # number of particles per triangle
 
-  int_cutoff=0.45  #this is the distance threshold for an interaction to check the dimer configuration
+  int_cutoff=0.7  #this is the distance threshold for an interaction to check the dimer configuration
 
   gsd_file = gsd.hoomd.open(traj_file)
   
@@ -294,9 +296,8 @@ if __name__=="__main__":
   # WILL NEED TO MAKE THIS A FUNCTION TO GO THROUGH ALL OF THE FRAMES
   #create a snapshot of a single frame of the trajectory   
 
-  #for frame_id in range(len(gsd_file)):
-  for frame_id in [-1]:
-
+  for frame_id in range(len(gsd_file)):
+  
     print('analyzing frame ', frame_id,'/',len(gsd_file))
     
     snap = gsd_file[frame_id]
