@@ -145,7 +145,7 @@ def body_coord_sys(snap, particle_id, side_id, N_p, vpp):
   left_side1, right_side1 = np.average(side1_positions[:3], axis=0), np.average(side1_positions[3:], axis=0)
 
   #we can now define the axis directions
-  y_hat = (left_side1 - right_side1)/norm(left_side1 - right_side1)
+  y_hat = -(left_side1 - right_side1)/norm(left_side1 - right_side1)
   x_hat = (com_side1 - com)/norm(com_side1 - com)
   z_hat = cross(x_hat, y_hat)
 
