@@ -199,9 +199,9 @@ def getRelativeCoordsProjections(snap, b1, b2, side_id, N_p, vpp):
     else: th_R = th_R+np.pi
     '''
 
-    th_R = angleBetween(y1, n2_xy, "TAN") - np.pi/2.
-    th_T = angleBetween(z1, n2_yz, "TAN") - np.pi/2. 
-    th_B = angleBetween(x1, n2_zx, "TAN") - np.pi/2.
+    th_R = angleBetween(y, n2_xy, "TAN") - np.pi/2.
+    th_T = angleBetween(z, n2_yz, "TAN") - np.pi/2. 
+    th_B = angleBetween(x, n2_zx, "TAN") - np.pi/2.
     
     return stretches, th_R, th_T, th_B
 
@@ -287,7 +287,7 @@ if __name__=="__main__":
   #preamble, setting up parameters of the simulation and setting boolean flags
 
   plot_part_centers = False #this plots the COM of particles
-  plot_test_dimer = True #this plots a single pair of dimers to make sure our neighbor finding code worked
+  plot_test_dimer = False #this plots a single pair of dimers to make sure our neighbor finding code worked
 
   if len(sys.argv)>1:
     side_id = int(sys.argv[1])  #this can be 1, 2, or 3
