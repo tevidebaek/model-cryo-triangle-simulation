@@ -275,12 +275,14 @@ if __name__=="__main__":
 
   if len(sys.argv)>1:
     side_id = int(sys.argv[1])  #this can be 1, 2, or 3
+    src = sys.argv[2]
   else: side_id=1
+    
+  #traj_file = './SimulationOutput/Side'+str(side_id)+'/trajectory.gsd'
+  #output_src = './SimulationOutput/Side'+str(side_id)+'/'
 
-  traj_file = './SimulationOutput/Side'+str(side_id)+'/trajectory.gsd'
-
-  output_src = './SimulationOutput/Side'+str(side_id)+'/'
-
+  traj_file = src+'trjectory.gsd'
+  output_src = src
 
   N_p = 36*6  # number of triangles in the simulation
   vpp = 120   # number of particles per triangle
