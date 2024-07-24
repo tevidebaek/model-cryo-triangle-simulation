@@ -244,11 +244,20 @@ def plotDimer(particle_pair, snap, N_p, vpp):
   print(x1, y1, z1)
   print(x2, y2, z2)
 
-  for position in snap.particles.position[N_p + particle_id_1*vpp:N_p+(particle_id_1+1)*vpp]:
-    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='r')
+  part1_range_L, part1_range_R = N_p + particle_id_1*vpp, N_p+(particle_id_1+1)*vpp
+  part2_range_L, part2_range_R = N_p + particle_id_2*vpp, N_p+(particle_id_2+1)*vpp
 
-  for position in snap.particles.position[N_p + particle_id_2*vpp:N_p+(particle_id_2+1)*vpp]:
+  for position in snap.particles.position[part1_range_L:part1_range_R-18]:
+    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='r')
+  for position in snap.particles.position[part1_range_R-18:part1_range_R]:
+    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='orange')
+
+
+  for position in snap.particles.position[part2_range_L:part2_range_R-18]:
     axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='b')
+  for position in snap.particles.position[part2_range_R-18:part2_range_R]:
+    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='cyan')
+
 
   for normal_vec in [x1, y1, z1]:
      origin, vec_end = particle_1_com - avg_com, particle_1_com - avg_com + normal_vec
@@ -271,7 +280,7 @@ if __name__=="__main__":
   #preamble, setting up parameters of the simulation and setting boolean flags
 
   plot_part_centers = False #this plots the COM of particles
-  plot_test_dimer = False #this plots a single pair of dimers to make sure our neighbor finding code worked
+  plot_test_dimer = True #this plots a single pair of dimers to make sure our neighbor finding code worked
 
   if len(sys.argv)>1:
     side_id = int(sys.argv[1])  #this can be 1, 2, or 3
@@ -310,6 +319,8 @@ if __name__=="__main__":
     #the next thing to do is to see which particles are neighbors
     particle_pairs_to_check = create_dimer_list(snap, side_id, N_p, vpp)
     
+    print(len(particle_pairs_to_check))
+
     if plot_test_dimer: plotDimer(particle_pairs_to_check[0], snap, N_p, vpp)
 
     #now that we have a list of valid dimer particle pairs we want to calculate the angles of the body
