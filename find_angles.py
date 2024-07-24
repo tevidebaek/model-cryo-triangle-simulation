@@ -281,7 +281,7 @@ if __name__=="__main__":
   #traj_file = './SimulationOutput/Side'+str(side_id)+'/trajectory.gsd'
   #output_src = './SimulationOutput/Side'+str(side_id)+'/'
 
-  traj_file = src+'trjectory.gsd'
+  traj_file = src+'trajectory.gsd'
   output_src = src
 
   N_p = 36*6  # number of triangles in the simulation
