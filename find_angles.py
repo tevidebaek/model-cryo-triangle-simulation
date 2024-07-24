@@ -224,7 +224,7 @@ def plotCenters(snap, N_p):
     axs.scatter3D(position[0], position[1], position[2], c='k')
   plt.show()
 
-def plotDimer(particle_pair, snap, N_p, vpp):
+def plotDimer(particle_pair, snap, side_id, N_p, vpp):
   fig = plt.figure()
   axs = fig.add_subplot(111, projection='3d')
 
@@ -237,9 +237,9 @@ def plotDimer(particle_pair, snap, N_p, vpp):
 
   #get the coord vectors
 
-  x1, y1, z1, com1 = body_coord_sys(snap, particle_id_1, 1, N_p, vpp)
+  x1, y1, z1, com1 = body_coord_sys(snap, particle_id_1, side_id, N_p, vpp)
 
-  x2, y2, z2, com2 = body_coord_sys(snap, particle_id_2, 1, N_p, vpp)
+  x2, y2, z2, com2 = body_coord_sys(snap, particle_id_2, side_id, N_p, vpp)
 
   print(x1, y1, z1)
   print(x2, y2, z2)
@@ -321,7 +321,7 @@ if __name__=="__main__":
     
     print(len(particle_pairs_to_check))
 
-    if plot_test_dimer: plotDimer(particle_pairs_to_check[0], snap, N_p, vpp)
+    if plot_test_dimer: plotDimer(particle_pairs_to_check[0], snap, side_id, N_p, vpp)
 
     #now that we have a list of valid dimer particle pairs we want to calculate the angles of the body
     #to do this we will use the same code that we use for the cryo-em analysis, for this we will need
