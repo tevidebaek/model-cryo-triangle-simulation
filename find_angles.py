@@ -161,7 +161,7 @@ def projectVector(a,n):
 def interaction_translations(x,y,z, int_1, int_2):
     #x,y,z are the normal vectors for boudy 1
     #int_1 and int_2 are approximations of the interaction sites on the two bodies
-    int_vector = int_1 - int_2
+    int_vector = int_2 - int_1
     dx, dy, dz = dot(int_vector, x), dot(int_vector, y), dot(int_vector, z)
 
     return np.array([dx, dy, dz])
@@ -177,6 +177,7 @@ def getRelativeCoordsProjections(snap, b1, b2, side_id, N_p, vpp):
 
     n2_xy, n2_yz, n2_zx = projectVector(n1, z), projectVector(n2, x), projectVector(n3, y) #this gives: roll, twist, bend
 
+    '''
     #need to also be carefull about the sign of the angles: do this by taking the cross product and seeing the sign wrt to the projection axis
     #to get the angles now see what their angle is with respect to the corresponding normal
     th_R = angleBetween(x,n2_xy,"TAN")
@@ -189,14 +190,20 @@ def getRelativeCoordsProjections(snap, b1, b2, side_id, N_p, vpp):
 
     th_T = sgn_T*th_T
     th_R = sgn_R*th_R
+    th_B = sgn_B*th_B
 
     if th_T>0: th_T = th_T-np.pi
     else: th_T = th_T+np.pi
 
     if th_R>0: th_R = th_R-np.pi
     else: th_R = th_R+np.pi
+    '''
 
-    return stretches, th_R, th_T, th_B*sgn_B
+    th_R = angleBetween(y1, n2_xy, "TAN") - np.pi/2.
+    th_T = angleBetween(z1, n2_yz, "TAN") - np.pi/2. 
+    th_B = angleBetween(x1, n2_zx, "TAN") - np.pi/2.
+    
+    return stretches, th_R, th_T, th_B
 
 def projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp):
 
