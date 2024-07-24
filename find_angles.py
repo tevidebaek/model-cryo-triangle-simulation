@@ -308,7 +308,7 @@ if __name__=="__main__":
   # WILL NEED TO MAKE THIS A FUNCTION TO GO THROUGH ALL OF THE FRAMES
   #create a snapshot of a single frame of the trajectory   
 
-  for frame_id in range(len(gsd_file)):
+  for frame_id in range(len(gsd_file))[::-1]:
   
     print('analyzing frame ', frame_id,'/',len(gsd_file))
     
