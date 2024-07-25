@@ -281,7 +281,7 @@ if params.ramp:
     L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000))
     integrator.methods.append(L_int)
 
-elif params.ramp:
+elif not params.ramp:
     #use this line for a constant temperature
     L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=params.kT)
     integrator.methods.append(L_int)
