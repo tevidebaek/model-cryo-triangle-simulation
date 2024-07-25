@@ -8,14 +8,14 @@ if __name__=="__main__":
 
         #order of data is [dx, dy, dz, th_roll, th_twist, th_bend]
         
-        '''
+        
         #first we want to make a cut based on the interaction distance in the x-direction
         xbins = np.linspace(-1,1,11)
         
         plt.figure()
         plt.hist(data.T[0], bins=xbins)
         plt.show()
-        '''
+        
 
         cut_interaction = np.where((data.T[0]>0.25)&(data.T[0]<0.75))
         #cut_interaction = np.where((data.T[0]>-0.75)&(data.T[0]<-0.25))
@@ -27,9 +27,9 @@ if __name__=="__main__":
 
         return th_bend, th_twist, th_roll
 
-    filename1 = './SimulationOutput/Side1/side1_fluctuations.npy'
+    filename1 = './SimulationOutput/Side2/run_003/side2_fluctuations.npy'
     #filename2 = './SimulationOutput/Side2/run_002/side2_fluctuations.npy'
-    filename2 = './SimulationOutput/side2_fluctuations.npy'
+    filename2 = './SimulationOutput/Side2/run_002/side2_fluctuations.npy'
     filename3 = './SimulationOutput/Side3/side3_fluctuations.npy'
 
     B1, T1, R1 = getAngleDist(filename1)
@@ -41,8 +41,8 @@ if __name__=="__main__":
 
     bins = np.linspace(-50, 50, 41)
 
-    axs[0].hist(T1, bins=bins, ec='k', fc='blue')
-    axs[1].hist(T2, bins=bins, ec='k', fc='yellow')
-    axs[2].hist(T3, bins=bins, ec='k', fc='red')
+    axs[0].hist(B1, bins=bins, ec='k', fc='blue')
+    axs[1].hist(B2, bins=bins, ec='k', fc='yellow')
+    axs[2].hist(B3, bins=bins, ec='k', fc='red')
 
     plt.show()
