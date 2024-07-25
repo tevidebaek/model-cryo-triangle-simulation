@@ -92,14 +92,19 @@ def create_dimer_list(snap, side_id, N_p, vpp):  #WILL NEED TO ADD A FLAG ABOUT 
 
   for particle_pair in temp_check_list:
     #THIS CAN BE EXTENDED TO CHECK THAT MORE OF THE INTERACTIONS ARE WITHIN A CERTAIN DISTANCE
-    particle_1 = get_specific_type_position(snap, particle_pair[0], N_p, vpp, 'A'+str(side_id))   #position A1 interacts with F1 ####################################################
-    particle_2 = get_specific_type_position(snap, particle_pair[1], N_p, vpp, 'F'+str(side_id))   #position F1 interacts with A1 ####################################################
+    particle_1_A = get_specific_type_position(snap, particle_pair[0], N_p, vpp, 'A'+str(side_id))   #position A1 interacts with F1 ####################################################
+    particle_2_F = get_specific_type_position(snap, particle_pair[1], N_p, vpp, 'F'+str(side_id))   #position F1 interacts with A1 ####################################################
+
+    particle_1_F = get_specific_type_position(snap, particle_pair[0], N_p, vpp, 'F'+str(side_id))   #position A1 interacts with F1 ####################################################
+    particle_2_A = get_specific_type_position(snap, particle_pair[1], N_p, vpp, 'A'+str(side_id))   #position F1 interacts with A1 ####################################################
 
     #print(particle_pair)
     #print(particle_1, particle_2)
     
-    if inter_part_distance(particle_1, particle_2) < int_cutoff:
-      particle_pairs_to_check.append(particle_pair)
+    if inter_part_distance(particle_1_A, particle_2_F) < int_cutoff:
+      if inter_part_distance(particle_1_F, particle_2_A) < int_cutoff:
+      
+        particle_pairs_to_check.append(particle_pair)
 
   #print(particle_pairs_to_check)
 
