@@ -15,6 +15,10 @@ pseudoatoms_per_side = 6
 int_atoms_per_side = 3
 
 ramp=False
+int_side1 = True
+int_side2 = False
+int_side3 = False
+
 kT = 0.7
 dt = 0.002
 num_steps = 1000000

@@ -28,9 +28,9 @@ equilibrate = True
 show_triangle = False
 
 #interactions
-int_side1 = False
-int_side2 = True
-int_side3 = False
+int_side1 = params.int_side1
+int_side2 = params.int_side2
+int_side3 = params.int_side3
 
 # the first thing we want to do is create a log file that has all of the relevant simulation parameters
 # that were set for this run
