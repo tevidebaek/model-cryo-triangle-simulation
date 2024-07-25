@@ -1,4 +1,5 @@
 import numpy as np # only for np.pi
+
 # Parameters
 triangle_length = 2.
 triangle_height = triangle_length/3.
@@ -13,7 +14,8 @@ angle3 = 66.858 * np.pi/180
 pseudoatoms_per_side = 6
 int_atoms_per_side = 3
 
-kT = 1
+ramp=False
+kT = 0.7
 dt = 0.002
 num_steps = 1000000
 t_dump = 2000
