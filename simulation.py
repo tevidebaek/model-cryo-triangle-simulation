@@ -176,7 +176,7 @@ c  = 0
 for i in range(particle_per_dim):
     for j in range(particle_per_dim):
         for k in range(particle_per_dim):
-
+            print(c)
 
             positions[c][0] = x1[i]
             positions[c][1] = x1[j]
@@ -185,6 +185,10 @@ for i in range(particle_per_dim):
 
             if c >= params.subunits:
                 break
+        else: continue
+        break
+    else: continue
+    break
 
 #add the lattice positions to the snapshot
 snapshot.particles.position = positions
