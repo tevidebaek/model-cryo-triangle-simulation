@@ -290,7 +290,7 @@ filtered_bodies = hoomd.filter.Rigid(("center", "free"))
 #integrator.methods.append(L_int)
 
 #use this line for a constant temperature
-L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=0.7)
+L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=0.8)
 integrator.methods.append(L_int)
 
 bussi = hoomd.md.methods.thermostats.Bussi(1.0)
