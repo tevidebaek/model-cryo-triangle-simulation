@@ -32,15 +32,32 @@ int_side1 = False
 int_side2 = True
 int_side3 = False
 
+# the first thing we want to do is create a log file that has all of the relevant simulation parameters
+# that were set for this run
 
-# Create triangle
-positions, types = get_triangle(params.triangle_length,
-                                params.triangle_length,
-                                params.triangle_length,
-                                params.triangle_height,
-                                params.angle1, params.angle2, params.angle3,
-                                params.pseudoatoms_per_side,
-                                params.int_atoms_per_side)
+logfile = open('simulation_params.log', 'w')
+logfile.write("SIMULATION PARAMETERS \n")
+logfile.write("Int side1 "+str(int_side1)+"\n")
+logfile.write("Int side1 "+str(int_side2)+"\n")
+logfile.write("Int side1 "+str(int_side3)+"\n")
+logfile.write("Temperature ramp "+str(params.ramp)+"\n")
+logfile.write("Temperature iso "+str(params.kT)+"\n")
+logfile.write("num_steps "+str(params.num_steps)+"\n")
+
+logfile.write("num_subunits "+str(params.subunits)+"\n")
+logfile.write("box_size "+str(params.box_size)+"\n")
+logfile.write("seed "+str(params.seed)+"\n")
+
+#interaction values
+logfile.write("E_bond "+str(params.E_bond)+"\n")
+logfile.write("E_rep "+str(params.E_rep)+"\n")
+
+logfile.write("lj_sigma "+str(params.lj_sigma)+"\n")
+logfile.write("m_r0 "+str(params.m_r0)+"\n")
+logfile.write("m_alpha "+str(params.m_alpha)+"\n")
+logfile.write("m_cut "+str(params.m_cut)+"\n")
+
+logfile.close()
 
 v_data = np.loadtxt('../MonomerSurfacePositions_lowdensity.csv', skiprows = 1, delimiter = ',')
 
@@ -63,15 +80,7 @@ for i in range(len(interactions)):
 #print(positions)
 
 positions = np.append(positions, interactions,axis = 0)
-# positions = np.append(positions, np.array([0.25*(positions[2] + positions[2+15] + positions[3] + positions[3+15])]),axis = 0)
-# positions = np.append(positions, np.array([0.5*(positions[4] + positions[4+15])]),axis = 0)
-# positions = np.append(positions, np.array([0.5*(positions[6] + positions[6+15])]),axis = 0)
-# positions = np.append(positions, np.array([0.25*(positions[7] + positions[7+15] + positions[8] + positions[8+15])]),axis = 0)
-# positions = np.append(positions, np.array([0.5*(positions[9] + positions[9+15])]),axis = 0)
-# positions = np.append(positions, np.array([0.5*(positions[11] + positions[11+15])]),axis = 0)
-# positions = np.append(positions, np.array([0.25*(positions[12] + positions[12+15] + positions[13] + positions[13+15])]),axis = 0)
-# positions = np.append(positions, np.array([0.5*(positions[14] + positions[14+15])]),axis = 0)
-# positions = np.append(positions, 0.5*np.array(positions[1][:]+positions[1+15][:]))
+
 types = np.append(types, 'D1') #D1
 types = np.append(types, 'E1') #E1
 types = np.append(types, 'F1') #F1
@@ -93,15 +102,6 @@ types = np.append(types, 'E3') #E3
 # types = np.append(types, 'A')
 
 # Interacting types are missing. We'll do fully specific interactions
-# types.append('A')
-# types.append('B')
-# types.append('C')
-# types.append('D')
-# types.append('D')
-# types.append('D')
-# types.append('G')
-# types.append('H')
-# types.append('I')
 if len(positions) != len(types):
     print('Wrong number of positions and types!!!')
 
@@ -185,15 +185,6 @@ for i in range(particle_per_dim):
 
             if c >= params.subunits:
                 break
-
-#visualize the lattice
-# fig = plt.figure()
-# ax = fig.add_subplot(111, projection='3d')
-#
-# ax.scatter(positions[:,0], positions[:,1], positions[:,2], c='red')
-# ax.view_init(30, -120)
-# plt.show()
-
 
 #add the lattice positions to the snapshot
 snapshot.particles.position = positions
@@ -285,16 +276,18 @@ simulation.operations.integrator = integrator
 
 filtered_bodies = hoomd.filter.Rigid(("center", "free"))
 
-#use this line for a temperature ramp
-#L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000))
-#integrator.methods.append(L_int)
+if params.ramp:
+    #use this line for a temperature ramp
+    L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000))
+    integrator.methods.append(L_int)
 
-#use this line for a constant temperature
-L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=0.8)
-integrator.methods.append(L_int)
+elif params.ramp:
+    #use this line for a constant temperature
+    L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=params.kT)
+    integrator.methods.append(L_int)
 
-bussi = hoomd.md.methods.thermostats.Bussi(1.0)
-bussi.kT = hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000)
+#bussi = hoomd.md.methods.thermostats.Bussi(1.0)
+#bussi.kT = hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000)
 # simulation.operations.integrator.methods[0].thermostat = bussi
 
 full_type_list = [name] + list(set(types))
@@ -313,25 +306,8 @@ morse.r_cut[  (full_type_list, full_type_list)] = 0
 # Repulsive interaction between V and S
 lj.params[("V", "V") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
 lj.r_cut[ ("V", "V") ] = params.lj_cut
-# lj.params[("V", "S") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
-# lj.r_cut[ ("V", "S") ] = params.lj_cut
-# lj.params[("S", "S") ] = dict(epsilon = params.E_rep, sigma = params.lj_sigma)
-# lj.r_cut[ ("S", "S") ] = params.lj_cut
 
 integrator.forces.append(lj)
-
-# morse.params[ ("A", "C") ] = dict(D0=params.E_bond, r0=params.m_r0, alpha=params.m_alpha)
-# morse.r_cut[  ("A", "C") ] = params.m_cut
-# morse.params[ ("B", "B") ] = dict(D0=params.E_bond, r0=params.m_r0, alpha=params.m_alpha)
-# morse.r_cut[  ("B", "B") ] = params.m_cut
-# morse.params[ ("D", "D") ] = dict(D0=params.E_bond, r0=params.m_r0, alpha=params.m_alpha)
-# morse.r_cut[  ("D", "D") ] = params.m_cut
-# morse.params[ ("E", "E") ] = dict(D0=params.E_bond, r0=params.m_r0, alpha=params.m_alpha)
-# morse.r_cut[  ("E", "E") ] = params.m_cut
-# morse.params[ ("G", "I") ] = dict(D0=params.E_bond, r0=params.m_r0, alpha=params.m_alpha)
-# morse.r_cut[  ("G", "I") ] = params.m_cut
-# morse.params[ ("H", "H") ] = dict(D0=params.E_bond, r0=params.m_r0, alpha=params.m_alpha)
-# morse.r_cut[  ("H", "H") ] = params.m_cut
 
 #new interactions with the 6 binding sites per side
 
