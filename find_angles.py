@@ -34,16 +34,23 @@ def angleBetween(u,v,calc_type="COS"):
 #                     DIMER ID FUNCTIONS                    #
 #############################################################
 
-def inter_part_distance(p1, p2):
+def inter_part_distance(p1, p2, box_size):
   #particles are a list of positions (x, y, z)
-  return np.sqrt( (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
 
-def find_neighbors(particle_list, particle_id, cutoff=5):
+  #need to account for the periodic box
+  dx, dy, dz = p1[0]-p2[0], p1[1]-p2[1], p1[2]-p2[2]
+  dx = np.min([dx, box_size-dx])
+  dy = np.min([dy, box_size-dy])
+  dz = np.min([dz, box_size-dz])
+    
+  return np.sqrt( dx**2 + dy**2 + dz**2)
+
+def find_neighbors(particle_list, particle_id, box_size, cutoff=4):
   #this will take a particle and see which particles have a COM within some cutoff distance
   neighbor_list = []
 
   for o_part_id in range(len(particle_list)):
-    distance = inter_part_distance(particle_list[particle_id], particle_list[o_part_id])
+    distance = inter_part_distance(particle_list[particle_id], particle_list[o_part_id], box_size)
 
     if distance<0.0000001: continue  #this makes sure we are not checking the same particle
 
@@ -70,7 +77,7 @@ def get_specific_type_position(snap, part_id, N_p, vpp, type_id):
 
   return snap.particles.position[loc_particle]
 
-def create_dimer_list(snap, side_id, N_p, vpp):  #WILL NEED TO ADD A FLAG ABOUT WHICH INTERACTIONS TO CHECK
+def create_dimer_list(snap, side_id, N_p, vpp, box_size):  #WILL NEED TO ADD A FLAG ABOUT WHICH INTERACTIONS TO CHECK
   particle_coms = snap.particles.position[:N_p]
 
   particle_pairs_to_check = []
@@ -78,7 +85,7 @@ def create_dimer_list(snap, side_id, N_p, vpp):  #WILL NEED TO ADD A FLAG ABOUT 
   print('creating dimer list')
   
   for i in range(len(particle_coms)):
-    neighbor_list = find_neighbors(particle_coms, i)
+    neighbor_list = find_neighbors(particle_coms, i, box_size)
     
     for nn_id in neighbor_list: particle_pairs_to_check.append(nn_id)
 
@@ -101,8 +108,8 @@ def create_dimer_list(snap, side_id, N_p, vpp):  #WILL NEED TO ADD A FLAG ABOUT 
     #print(particle_pair)
     #print(particle_1, particle_2)
     
-    if inter_part_distance(particle_1_A, particle_2_F) < int_cutoff:
-      if inter_part_distance(particle_1_F, particle_2_A) < int_cutoff:
+    if inter_part_distance(particle_1_A, particle_2_F, box_size) < int_cutoff:
+      if inter_part_distance(particle_1_F, particle_2_A, box_size) < int_cutoff:
       
         particle_pairs_to_check.append(particle_pair)
 
@@ -114,10 +121,12 @@ def create_dimer_list(snap, side_id, N_p, vpp):  #WILL NEED TO ADD A FLAG ABOUT 
 #                   RELATIVE ORI FUNCTIONS                  #
 #############################################################
 
-def body_coord_sys(snap, particle_id, side_id, N_p, vpp):
+def body_coord_sys(snap, particle_id, side_id, N_p, vpp, box_size, plotParticle=False):
   #given the coordinates we currently have we can get our y-axis from the interactions on side 1 and we
   #can get our x-axis from the COM and the COM of the side1 interactions
 
+  box_shift = np.array([-box_size/2., -box_size/2., -box_size/2.])
+    
   #first get the coordinates of all of the interactions
   int_sideA_types = ["A1", "B1", "C1", "D1", "E1", "F1"]
   int_sideB_types = ["A2", "B2", "C2", "D2", "E2", "F2"]
@@ -130,16 +139,20 @@ def body_coord_sys(snap, particle_id, side_id, N_p, vpp):
   if side_id==3:
      int_side1_types, int_side2_types, int_side3_types = int_sideC_types, int_sideA_types, int_sideB_types
 
+  p_com = np.asarray(snap.particles.position[particle_id])
+     
   def get_side_positions(int_side_types):
     side_positions = []
 
     for int_type in int_side_types:
-      side_positions.append(get_specific_type_position(snap, particle_id, N_p, vpp, int_type))
+      position_to_append = get_specific_type_position(snap, particle_id, N_p, vpp, int_type)
+      position_to_append = position_to_append - box_shift-p_com
+      side_positions.append(position_to_append)
     return np.array(side_positions)  
 
-  side1_positions = get_side_positions(int_side1_types)
-  side2_positions = get_side_positions(int_side2_types)
-  side3_positions = get_side_positions(int_side3_types)
+  side1_positions = (get_side_positions(int_side1_types))%(box_size) + box_shift + p_com
+  side2_positions = (get_side_positions(int_side2_types))%(box_size) + box_shift + p_com
+  side3_positions = (get_side_positions(int_side3_types))%(box_size) + box_shift + p_com
 
   #now that we have all of the side positions we can get some location data
   all_positions = np.concatenate([side1_positions, side2_positions, side3_positions], axis=0)
@@ -147,6 +160,23 @@ def body_coord_sys(snap, particle_id, side_id, N_p, vpp):
 
   com_side1 = np.average(side1_positions, axis=0)
 
+  if plotParticle:
+
+      #print(np.min(side1_positions), np.max(side1_positions))
+      #print(np.min(side2_positions), np.max(side2_positions))
+      #print(np.min(side3_positions), np.max(side3_positions))
+      
+      fig = plt.figure()
+      axs = fig.add_subplot(111, projection='3d')
+
+      axs.scatter3D(all_positions.T[0], all_positions.T[1], all_positions.T[2], c='k', alpha=0.4)
+      axs.scatter3D(com[0], com[1], com[2], c='r')
+
+      axs.set_aspect('equal')
+      
+      plt.show()
+      plt.close()
+  
   left_side1, right_side1 = np.average(side1_positions[:3], axis=0), np.average(side1_positions[3:], axis=0)
 
   #we can now define the axis directions
@@ -171,12 +201,12 @@ def interaction_translations(x,y,z, int_1, int_2):
 
     return np.array([dx, dy, dz])
 
-def getRelativeCoordsProjections(snap, b1, b2, side_id, N_p, vpp):
+def getRelativeCoordsProjections(snap, b1, b2, side_id, N_p, vpp, box_size):
     #b1, b2 are coordinates of the two bodies
 
     #first get the x,y,z are the coordinates of body 1
-    x,y,z, int_1 = body_coord_sys(snap, b1, side_id, N_p, vpp)
-    n1, n2, n3, int_2 = body_coord_sys(snap, b2, side_id, N_p, vpp)
+    x,y,z, int_1 = body_coord_sys(snap, b1, side_id, N_p, vpp, box_size)
+    n1, n2, n3, int_2 = body_coord_sys(snap, b2, side_id, N_p, vpp, box_size)
 
     stretches = interaction_translations(x,y,z, int_1, int_2)
 
@@ -210,7 +240,7 @@ def getRelativeCoordsProjections(snap, b1, b2, side_id, N_p, vpp):
     
     return stretches, th_R, th_T, th_B
 
-def projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp):
+def projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp, box_size):
 
   relative_projections = []
 
@@ -219,7 +249,7 @@ def projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp):
     #print(pair)
       
     body_1, body_2 = pair  #recall these are the index of the body
-    stretches, th_R, th_T, th_B = getRelativeCoordsProjections(snap, body_1, body_2, side_id, N_p, vpp)
+    stretches, th_R, th_T, th_B = getRelativeCoordsProjections(snap, body_1, body_2, side_id, N_p, vpp, box_size)
     dx, dy, dz = stretches
     relative_projections.append([dx, dy, dz, th_R, th_T, th_B])
 
@@ -237,82 +267,86 @@ def plotCenters(snap, N_p):
   plt.show()
 
 def plotDimer(particle_pair, snap, side_id, N_p, vpp, box_size):
-  fig = plt.figure()
-  axs = fig.add_subplot(111, projection='3d')
-
+    
   #this vector will shift all of the particle positions to be positive
   box_shift = np.array([-box_size/2., -box_size/2., -box_size/2.])
 
   particle_id_1, particle_id_2 = particle_pair
 
-  particle_1_com = snap.particles.position[particle_id_1] + box_shift
-  particle_2_com = snap.particles.position[particle_id_2] + box_shift
-
+  particle_1_com = snap.particles.position[particle_id_1] #- box_shift
+  particle_2_com = snap.particles.position[particle_id_2] #- box_shift
+  
   #move all the points by a single displacement vector
-  displacement_vec = particle_1_com
+  displacement_vec = np.average([particle_1_com, particle_2_com], axis=0)
 
+  #print(displacement_vec)
+  #print(snap.particles.position[particle_id_1])
+  
   avg_com = np.average(np.array([particle_1_com, particle_2_com]), axis=0)
 
   #get the coord vectors
 
-  x1, y1, z1, com1 = body_coord_sys(snap, particle_id_1, side_id, N_p, vpp)
+  x1, y1, z1, com1 = body_coord_sys(snap, particle_id_1, side_id, N_p, vpp, box_size, True)
 
-  x2, y2, z2, com2 = body_coord_sys(snap, particle_id_2, side_id, N_p, vpp)
+  x2, y2, z2, com2 = body_coord_sys(snap, particle_id_2, side_id, N_p, vpp, box_size, True)
 
-  print(x1, y1, z1)
-  print(x2, y2, z2)
+  #print(x1, y1, z1)
+  #print(x2, y2, z2)
 
+  print("check com")
+  print(particle_1_com)
+
+  
   part1_range_L, part1_range_R = N_p + particle_id_1*vpp, N_p+(particle_id_1+1)*vpp
   part2_range_L, part2_range_R = N_p + particle_id_2*vpp, N_p+(particle_id_2+1)*vpp
 
   #for the different particles we need to do a check to make sure that the points are in not
   # being broken up by the periodic boundaries
 
-  part_1_v_pos  = np.asarray(snap.particles.position[part1_range_L:part1_range_R-18]) + box_shift
-  part_1_int_pos= np.asarray(snap.particles.position[part1_range_R-18:part1_range_R]) + box_shift
+  part_1_v_pos  = np.asarray(snap.particles.position[part1_range_L:part1_range_R-18]) - box_shift
+  part_1_int_pos= np.asarray(snap.particles.position[part1_range_R-18:part1_range_R]) - box_shift
 
-  part_2_v_pos  = np.asarray(snap.particles.position[part2_range_L:part2_range_R-18]) + box_shift
-  part_2_int_pos= np.asarray(snap.particles.position[part2_range_R-18:part2_range_R]) + box_shift
+  part_2_v_pos  = np.asarray(snap.particles.position[part2_range_L:part2_range_R-18]) - box_shift
+  part_2_int_pos= np.asarray(snap.particles.position[part2_range_R-18:part2_range_R]) - box_shift
 
-  part_1_v_pos   = (part_1_v_pos - displacement_vec)%box_size
-  part_1_int_pos = (part_1_int_pos - displacement_vec)%box_size
-  part_2_v_pos   = (part_2_v_pos - displacement_vec)%box_size
-  part_2_int_pos = (part_2_int_pos - displacement_vec)%box_size
+  part_1_v_pos   = (part_1_v_pos - displacement_vec)%box_size + box_shift + displacement_vec
+  part_1_int_pos = (part_1_int_pos - displacement_vec)%box_size + box_shift + displacement_vec
+  part_2_v_pos   = (part_2_v_pos - displacement_vec)%box_size + box_shift + displacement_vec
+  part_2_int_pos = (part_2_int_pos - displacement_vec)%box_size + box_shift + displacement_vec
 
+  #print(part_1_v_pos)
+  
   def plotPoints(position, c='r'):
-    axs.scatter3D(position[0], position[1], position[2], c=c)
+    axs.scatter3D(position.T[0], position.T[1], position.T[2], c=c)
+
+  fig = plt.figure()
+  axs = fig.add_subplot(111, projection='3d')
 
   plotPoints(part_1_v_pos, c='r')
   plotPoints(part_1_int_pos, c='orange')
   plotPoints(part_2_v_pos, c='b')
   plotPoints(part_2_int_pos, c='cyan')
   
-  '''
-  for position in snap.particles.position[part1_range_L:part1_range_R-18]:
-    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='r')
-  for position in snap.particles.position[part1_range_R-18:part1_range_R]:
-    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='orange')
-
-
-  for position in snap.particles.position[part2_range_L:part2_range_R-18]:
-    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='b')
-  for position in snap.particles.position[part2_range_R-18:part2_range_R]:
-    axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='cyan')
-  '''
-
   for normal_vec in [x1, y1, z1]:
-     origin, vec_end = particle_1_com - avg_com, particle_1_com - avg_com + normal_vec
-     plt.plot([origin[0], vec_end[0]], [origin[1], vec_end[1]], [origin[2], vec_end[2]], c='r')
+     #origin  = particle_1_com - avg_com + displacement_vec
+     #vec_end = particle_1_com - avg_com + normal_vec + displacement_vec
+     origin  = com1 - avg_com + displacement_vec
+     vec_end = com1 - avg_com + normal_vec + displacement_vec
+     axs.plot([origin[0], vec_end[0]], [origin[1], vec_end[1]], [origin[2], vec_end[2]], c='r')
 
      
   for normal_vec in [x2, y2, z2]:
-     origin, vec_end = particle_2_com - avg_com, particle_2_com - avg_com + normal_vec
-     plt.plot([origin[0], vec_end[0]], [origin[1], vec_end[1]], [origin[2], vec_end[2]], c='b')
+     #origin  = particle_2_com - avg_com + displacement_vec
+     #vec_end = particle_2_com - avg_com + normal_vec + displacement_vec
+     origin  = com2 - avg_com + displacement_vec
+     vec_end = com2 - avg_com + normal_vec + displacement_vec
+     axs.plot([origin[0], vec_end[0]], [origin[1], vec_end[1]], [origin[2], vec_end[2]], c='b')
 
 
   axs.set_aspect('equal')
   
   plt.show()
+  plt.close()
 
 
 if __name__=="__main__":
@@ -334,9 +368,10 @@ if __name__=="__main__":
   traj_file = src+'trajectory.gsd'
   output_src = src
 
-  N_p = 36*6  # number of triangles in the simulation
+  N_p = 72  # number of triangles in the simulation
   vpp = 120   # number of particles per triangle
-
+  box_size=22 #size of simulation box
+  
   int_cutoff=0.7  #this is the distance threshold for an interaction to check the dimer configuration
 
   gsd_file = gsd.hoomd.open(traj_file)
@@ -358,16 +393,16 @@ if __name__=="__main__":
     if plot_part_centers: plotCenters(snap, N_p)
 
     #the next thing to do is to see which particles are neighbors
-    particle_pairs_to_check = create_dimer_list(snap, side_id, N_p, vpp)
+    particle_pairs_to_check = create_dimer_list(snap, side_id, N_p, vpp, box_size)
     
     print(len(particle_pairs_to_check))
 
-    if plot_test_dimer: plotDimer(particle_pairs_to_check[0], snap, side_id, N_p, vpp)
+    if plot_test_dimer: plotDimer(particle_pairs_to_check[0], snap, side_id, N_p, vpp, box_size)
 
     #now that we have a list of valid dimer particle pairs we want to calculate the angles of the body
     #to do this we will use the same code that we use for the cryo-em analysis, for this we will need
     #the vertex positions of the two particles
-    relative_projections = projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp)
+    relative_projections = projection_analysis(snap, particle_pairs_to_check, side_id, N_p, vpp, box_size)
 
     for rp in relative_projections: all_relative_projections.append(rp)
     
