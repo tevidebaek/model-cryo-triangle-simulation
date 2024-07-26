@@ -236,14 +236,20 @@ def plotCenters(snap, N_p):
     axs.scatter3D(position[0], position[1], position[2], c='k')
   plt.show()
 
-def plotDimer(particle_pair, snap, side_id, N_p, vpp):
+def plotDimer(particle_pair, snap, side_id, N_p, vpp, box_size):
   fig = plt.figure()
   axs = fig.add_subplot(111, projection='3d')
 
+  #this vector will shift all of the particle positions to be positive
+  box_shift = np.array([-box_size/2., -box_size/2., -box_size/2.])
+
   particle_id_1, particle_id_2 = particle_pair
 
-  particle_1_com = snap.particles.position[particle_id_1]
-  particle_2_com = snap.particles.position[particle_id_2]
+  particle_1_com = snap.particles.position[particle_id_1] + box_shift
+  particle_2_com = snap.particles.position[particle_id_2] + box_shift
+
+  #move all the points by a single displacement vector
+  displacement_vec = particle_1_com
 
   avg_com = np.average(np.array([particle_1_com, particle_2_com]), axis=0)
 
@@ -259,6 +265,29 @@ def plotDimer(particle_pair, snap, side_id, N_p, vpp):
   part1_range_L, part1_range_R = N_p + particle_id_1*vpp, N_p+(particle_id_1+1)*vpp
   part2_range_L, part2_range_R = N_p + particle_id_2*vpp, N_p+(particle_id_2+1)*vpp
 
+  #for the different particles we need to do a check to make sure that the points are in not
+  # being broken up by the periodic boundaries
+
+  part_1_v_pos  = np.asarray(snap.particles.position[part1_range_L:part1_range_R-18]) + box_shift
+  part_1_int_pos= np.asarray(snap.particles.position[part1_range_R-18:part1_range_R]) + box_shift
+
+  part_2_v_pos  = np.asarray(snap.particles.position[part2_range_L:part2_range_R-18]) + box_shift
+  part_2_int_pos= np.asarray(snap.particles.position[part2_range_R-18:part2_range_R]) + box_shift
+
+  part_1_v_pos   = (part_1_v_pos - displacement_vec)%box_size
+  part_1_int_pos = (part_1_int_pos - displacement_vec)%box_size
+  part_2_v_pos   = (part_2_v_pos - displacement_vec)%box_size
+  part_2_int_pos = (part_2_int_pos - displacement_vec)%box_size
+
+  def plotPoints(position, c='r'):
+    axs.scatter3D(position[0], position[1], position[2], c=c)
+
+  plotPoints(part_1_v_pos, c='r')
+  plotPoints(part_1_int_pos, c='orange')
+  plotPoints(part_2_v_pos, c='b')
+  plotPoints(part_2_int_pos, c='cyan')
+  
+  '''
   for position in snap.particles.position[part1_range_L:part1_range_R-18]:
     axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='r')
   for position in snap.particles.position[part1_range_R-18:part1_range_R]:
@@ -269,7 +298,7 @@ def plotDimer(particle_pair, snap, side_id, N_p, vpp):
     axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='b')
   for position in snap.particles.position[part2_range_R-18:part2_range_R]:
     axs.scatter3D(position[0]-avg_com[0], position[1]-avg_com[1], position[2]-avg_com[2], c='cyan')
-
+  '''
 
   for normal_vec in [x1, y1, z1]:
      origin, vec_end = particle_1_com - avg_com, particle_1_com - avg_com + normal_vec
