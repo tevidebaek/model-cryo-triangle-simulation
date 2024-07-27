@@ -35,20 +35,6 @@ run_mode="CPU"
 equilibrate = True
 show_triangle = False
 
-#interactions
-int_side1 = False
-int_side2 = True
-int_side3 = False
-
-
-# Create triangle
-positions, types = get_triangle(params.triangle_length,
-                                params.triangle_length,
-                                params.triangle_length,
-                                params.triangle_height,
-                                params.angle1, params.angle2, params.angle3,
-                                params.pseudoatoms_per_side,
-                                params.int_atoms_per_side)
 
 v_data = np.loadtxt('../MonomerSurfacePositions_lowdensity.csv', skiprows = 1, delimiter = ',')
 
@@ -361,16 +347,19 @@ simulation.operations.integrator = integrator
 
 filtered_bodies = hoomd.filter.Rigid(("center", "free"))
 
-#use this line for a temperature ramp
-#L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000))
-#integrator.methods.append(L_int)
+if params.ramp:
+    #use this line for a temperature ramp
+    L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000))
+    integrator.methods.append(L_int)
 
-#use this line for a constant temperature
-L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=0.7)
-integrator.methods.append(L_int)
+elif not params.ramp:
+    #use this line for a constant temperature
+    L_int = hoomd.md.methods.Langevin(filter = filtered_bodies, kT=params.kT)
+    integrator.methods.append(L_int)
 
-bussi = hoomd.md.methods.thermostats.Bussi(1.0)
-bussi.kT = hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000)
+
+#bussi = hoomd.md.methods.thermostats.Bussi(1.0)
+#bussi.kT = hoomd.variant.Ramp(A = 1.0, B = 0.0, t_start = 0, t_ramp = 100_000_000)
 # simulation.operations.integrator.methods[0].thermostat = bussi
 
 cell = hoomd.md.nlist.Cell(buffer=3.0, exclusions=['body'])
