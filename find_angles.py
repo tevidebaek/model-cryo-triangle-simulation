@@ -369,7 +369,7 @@ if __name__=="__main__":
   output_src = src
 
   N_p = 72  # number of triangles in the simulation
-  vpp = 120   # number of particles per triangle
+  vpp = 92   # number of particles per triangle
   box_size=22 #size of simulation box
   
   int_cutoff=0.7  #this is the distance threshold for an interaction to check the dimer configuration
